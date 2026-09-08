@@ -6,13 +6,15 @@
 
 `Nuke 17.0v3에서 검증` · `Windows` · `SAM3` · `2D Object Matchmove`
 
+https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
+
+*10초 편집 데모: 공·차량·얼굴의 원본, SAM3 마스크, 안정화 Crop과 Nuke 노드 구성.*
+
 SAM3의 객체 인식을 이용해 영상 속 대상을 찾고, 그 영역에서 얻은 움직임을 **Nuke 기본 Tracker·Transform·Crop**으로 내보내는 도구입니다. `face`, `red car`처럼 추적할 대상을 입력하고 분석한 뒤, Nuke에서 Reference와 Export를 이어서 다룰 수 있습니다.
 
 **SAM3 분석에는 시간이 걸립니다.** 모델 로딩과 프레임별 마스크 추론이 필요하며, 영상 길이·해상도·GPU에 따라 대기 시간이 달라집니다. 대신 객체를 지정하는 것부터 시작해 **대상 영역 선택 → 움직임 분석 → Nuke 노드 생성**을 한 흐름으로 진행할 수 있어, 객체 중심의 매치무브와 생성 영상의 원위치 배치를 간편하게 준비할 수 있습니다.
 
 [실행 환경](#실행-환경) · [설치](#설치-windows) · [사용 순서](#사용-순서) · [출력 종류](#출력-종류) · [상세 가이드](docs/USAGE.md)
-
-<!-- Demo images and videos will be added after selection. -->
 
 ---
 

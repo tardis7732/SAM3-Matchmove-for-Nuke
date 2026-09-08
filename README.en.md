@@ -6,13 +6,15 @@
 
 `Tested in Nuke 17.0v3` · `Windows` · `SAM3` · `2D Object Matchmove`
 
+https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
+
+*10-second edited demo: originals, SAM3 masks, stabilized crops, and native Nuke nodes for a ball, car, and face.*
+
 This tool uses SAM3 object recognition to find a subject in footage and export motion from that region as **native Nuke Tracker, Transform, and Crop nodes**. Enter a target such as `face` or `red car`, run the analysis, then continue working with Reference and Export in Nuke.
 
 **SAM3 analysis takes time.** It requires model loading and mask inference across frames, and the wait depends on clip length, resolution, and GPU. Starting with an object description brings **target selection → motion analysis → Nuke node creation** into one workflow, making it easier to prepare object-based matchmoves and place generated footage back into the original plate.
 
 [Requirements](#requirements) · [Installation](#installation-windows) · [Workflow](#workflow) · [Outputs](#outputs) · [Detailed guide (Korean)](docs/USAGE.md)
-
-<!-- Demo images and videos will be added after selection. -->
 
 ---
 
