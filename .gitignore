@@ -1,0 +1,36 @@
+# Local runtimes, model code and weights
+__pycache__/
+*.py[cod]
+.venv*/
+/vendor/
+/runtime/
+/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Credentials and machine-specific configuration
+.env
+.env.*
+*.pem
+*.key
+/config.local.json
+
+# Local media, working Nuke graphs and development evidence
+/outputs/
+/examples/
+/validation/
+/tests/
+/docs/VALIDATION.md
+/backups/
+*.log
+*.nk~
+*.nk.autosave
+*.autosave
+
+# Editor and OS state
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

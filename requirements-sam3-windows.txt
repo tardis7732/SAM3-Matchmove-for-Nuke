@@ -1,0 +1,11 @@
+# Install the matching CUDA PyTorch wheels before this file; see scripts/setup_sam3.ps1.
+numpy>=1.26,<2
+opencv-python>=4.8,<4.12
+Pillow>=10,<13
+setuptools<81
+einops
+pycocotools
+psutil
+scikit-image
+triton-windows>=3.6,<3.7
+-e ./vendor/sam3
