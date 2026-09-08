@@ -139,7 +139,7 @@ The four Tracker points are virtual coordinates constructed to reproduce the ana
 
 - **Analysis wait time and ease of use are separate considerations.** The tool connects object selection and node creation in one workflow, but does not promise real-time processing or a shorter total working time on every shot.
 - The default **BBox** mode calculates translation and scale from mask center and size; rotation is zero. **Features** mode uses image features inside the mask to estimate 2D rotation as well.
-- Occlusion, motion blur, and changes in expression or silhouette can affect the result. Start with a short range where the target is visible and check the output.
+- **Rotation estimates can be inaccurate.** The 2D angle is estimated from image features within the SAM3-masked region, so mask changes, occlusion, motion blur, and changes in the subject's pose can introduce errors or jitter. Check a short range first, and disable rotation or correct it manually when needed.
 - Existing masks must match the plate's **resolution, coordinates, and frames**. Restore cropped masks to the original plate space before using them.
 - This tracker does not solve nonrigid changes in generated footage, perspective deformation, or 3D rotation. Review and adjust the output for your shot.
 
