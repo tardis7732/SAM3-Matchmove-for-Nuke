@@ -20,7 +20,6 @@ Windows x64용 OFX 바이너리를 포함합니다. **일반 설치에는 C++ �
 
 - 네이티브 OFX가 Nuke의 입력 픽셀과 RAM 마스크 재생을 처리합니다.
 - **Analyze**로 지정한 구간의 마스크를 생성하고, **Solve**로 저장된 마스크의 움직임을 계산합니다.
-- 자동 마스크 PNG·분석용 입력 시퀀스·결과 JSON/CSV를 만들지 않습니다.
 - 분석 후 프레임 이동·재생은 RAM에 저장된 결과를 사용하며 SAM3를 재추론하지 않습니다.
 - View는 **Plate / Mask / Plate + mask alpha / Mask overlay**, 기본은 Mask입니다.
 - Export는 **Tracker / Matchmove / Stabilize / Plate Stabilize Crop / Generated Crop Matchmove**를 노드 아래에 만듭니다.
