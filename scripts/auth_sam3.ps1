@@ -48,7 +48,8 @@ try {
     }
     Write-Output "Official SAM3 checkpoint: $checkpointPath"
     Write-Output "Verified file size: $actualSize bytes. This does not replace a model inference check."
-    Write-Output 'Restart Nuke, select SAM3 text, and analyze a short frame range first.'
+    Write-Output 'Next: .\.venv-sam3\Scripts\python.exe tools/configure.py'
+    Write-Output 'Then run the repository-root install.ps1 and restart Nuke. Add SAM3 Mask OFX.'
 }
 catch {
     Write-Output "SAM3 is gated. Request access with the same Hugging Face account at $modelPage and wait for approval."

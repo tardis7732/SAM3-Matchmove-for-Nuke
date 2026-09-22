@@ -21,7 +21,6 @@ __pycache__/
 /outputs/
 /examples/
 /validation/
-/tests/
 /docs/VALIDATION.md
 /backups/
 *.log
@@ -34,3 +33,19 @@ __pycache__/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# OFX local configuration, generated builds and private working files
+/config/*.json
+/ofx/build*/
+/ofx/prebuilt/**/sam3mask.cfg
+/output/
+/dist/
+*.nk
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.exr
+*.zip
+.pytest_cache/

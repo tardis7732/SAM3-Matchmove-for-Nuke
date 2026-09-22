@@ -145,7 +145,8 @@ try {
     Write-Output "SAM3 revision: $installedCommit"
     Write-Output "Configuration: $configPath"
     Write-Output 'Runtime checks passed. This check does not load weights or prove text inference.'
-    Write-Output 'Run .\scripts\auth_sam3.ps1 to sign in and download the official checkpoint, then restart Nuke.'
+    Write-Output 'Next run scripts\auth_sam3.ps1 to download the official checkpoint.'
+    Write-Output 'Then run .\.venv-sam3\Scripts\python.exe tools/configure.py and the repository-root install.ps1.'
 }
 finally {
     Pop-Location

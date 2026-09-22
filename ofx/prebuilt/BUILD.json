@@ -1,0 +1,7 @@
+{
+  "version": "0.4.1",
+  "platform": "Windows x64",
+  "configuration": "Release",
+  "build_command": "powershell -ExecutionPolicy Bypass -File ofx/build.ps1 -RunTests",
+  "sha256": "5e0fa7bfafdf3be615f41897c75f1683a94e3eedf40b33cc92881691a80b0393"
+}
