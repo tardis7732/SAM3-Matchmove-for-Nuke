@@ -4,9 +4,15 @@
 
 [English](README.en.md) -> [한국어](README.md) -> [Usage guide](docs/USAGE.md)
 
+https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
+
+*10-second edited demo: originals, SAM3 masks, stabilized crops, and native Nuke nodes for a ball, car, and face.*
+
+> This demo was recorded with an earlier version. Following the OFX update, the UI and node structure shown in the video may differ from the current version. Follow the updated installation and usage instructions below.
+
 **Analyze -> RAM masks -> Solve -> Export native Nuke nodes.** The OFX plugin receives Nuke pixels and plays the completed mask batch directly from RAM. No temporary plate sequence, mask PNGs, or result JSON/CSV files are written by the new workflow.
 
-A prebuilt **Windows x64 OFX** is included. Normal installation does **not** require C++ build tools. You must prepare the separate Python environment and official SAM3 checkpoint. No sample media, working Nuke scripts, or models are included.
+A prebuilt **Windows x64 OFX** is included. Normal installation does **not** require C++ build tools. You must prepare the separate Python environment and official SAM3 checkpoint. The README demo is retained; separate source examples, working Nuke scripts, and models are not included in the distribution.
 
 ## Requirements
 

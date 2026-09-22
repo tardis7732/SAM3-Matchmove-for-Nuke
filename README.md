@@ -4,11 +4,17 @@
 
 [한국어](README.md) · [English](README.en.md) · [상세 사용법](docs/USAGE.md)
 
+https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
+
+*10초 편집 데모: 공·차량·얼굴의 원본, SAM3 마스크, 안정화 Crop과 Nuke 노드 구성.*
+
+> 데모는 이전 버전에서 제작되었습니다. OFX 업데이트로 영상 속 UI와 노드 구조는 현재 버전과 다를 수 있습니다. 설치와 사용 방법은 아래 최신 안내를 참고하세요.
+
 대상을 텍스트로 지정하고 **Analyze로 RAM 마스크 생성 → Solve로 움직임 계산 → Export로 Nuke 기본 노드 생성**을 진행합니다.
 마스크를 파일로 저장하고 별도 Read로 불러오는 과정 없이, 같은 SAM3 노드에서 Plate·Mask·Overlay를 확인합니다.
 
 Windows x64용 OFX 바이너리를 포함합니다. **일반 설치에는 C++ 빌드 도구가 필요하지 않습니다.**
-모델과 별도 Python 환경은 아래 순서대로 준비합니다. 예제 영상·이미지·작업 `.nk`·모델은 포함하지 않습니다.
+모델과 별도 Python 환경은 아래 순서대로 준비합니다. README의 데모는 유지하며, 별도 원본 예제 파일·작업 `.nk`·모델은 배포에 포함하지 않습니다.
 
 ## OFX 업데이트 내용
 
