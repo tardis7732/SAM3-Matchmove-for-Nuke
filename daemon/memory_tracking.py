@@ -10,9 +10,8 @@ import sys
 import numpy as np
 
 root = Path(__file__).resolve().parents[1]
-profile = root / 'config/frontend.json'
-settings = json.loads(profile.read_text(encoding='utf-8')) if profile.is_file() else {}
-sys.path.insert(0, settings.get('matchmove_root', str(root)))
+settings = json.loads((root / 'config/frontend.json').read_text(encoding='utf-8'))
+sys.path.insert(0, settings['matchmove_root'])
 from sam3_matchmove.tracking import (TrackingError, mask_bbox, _box_center,
     similarity_matrix, _bbox_transform, _estimate_pair, _image_to_nuke,
     _parameters, _fill_missing, _smooth)
@@ -27,7 +26,7 @@ def validate_memory_job(job):
         raise TrackingError('Frames must be contiguous')
     if job['reference_frame'] not in numbers:
         raise TrackingError('Reference must be inside the analysis range')
-    if job.get('tracking_mode', 'bbox') not in ('bbox', 'features'):
+    if job.get('tracking_mode', 'bbox') not in ('bbox', 'features', 'translation', 'translation_scale', 'translation_rotation'):
         raise TrackingError('Invalid motion mode')
     window = job.get('smoothing_window', 1)
     if type(window) is not int or window < 1 or window % 2 != 1:
@@ -49,6 +48,7 @@ def track_memory(job, progress=None):
     width, height = job["width"], job["height"]
     reference_index = next(i for i, item in enumerate(frames) if item["frame"] == job["reference_frame"])
     mode = job.get("tracking_mode", "bbox")
+    use_features = mode in ('features', 'translation_rotation')
     records, warnings = [], []
     boxes = []
     # Decode each source once. The forward/backward feature passes retain only
@@ -79,7 +79,7 @@ def track_memory(job, progress=None):
 
     for direction in (1, -1):
         previous = reference_index
-        previous_pixels = read_pair(previous) if mode == "features" else None
+        previous_pixels = read_pair(previous) if use_features else None
         stop = len(frames) if direction == 1 else -1
         for index in range(reference_index + direction, stop, direction):
             if not present[index]:
@@ -89,7 +89,7 @@ def track_memory(job, progress=None):
             score = min(1.0, max(0.0, score))
             matrix = None
             pixels = None
-            if mode == "features":
+            if use_features:
                 pixels = read_pair(index)
                 if abs(index - previous) <= 4:
                     pair, quality, reason = _estimate_pair(previous_pixels[0], pixels[0], previous_pixels[1], pixels[1])
@@ -106,9 +106,9 @@ def track_memory(job, progress=None):
                     reasons[index] = "more than 3 missing frames since last observation"
             if matrix is None:
                 matrix = _bbox_transform(boxes[index], reference_box)
-                statuses[index] = "bbox" if mode == "bbox" else "bbox_fallback"
-                confidence[index] = score if mode == "bbox" else 0.5 * score
-                if mode == "features":
+                statuses[index] = "bbox_fallback" if use_features else "bbox"
+                confidence[index] = 0.5 * score if use_features else score
+                if use_features:
                     fallback_anchors[index] = frames[index]["frame"]
             matrices[index] = matrix
             previous = index
@@ -128,6 +128,11 @@ def track_memory(job, progress=None):
         reasons[index] = "target mask absent"
     window = job.get("smoothing_window", 1)
     smoothed = _smooth(parameters, window)
+    # Restrict the solved transform itself so every export uses the selected components.
+    if mode in ('translation', 'translation_rotation'):
+        smoothed[:, 2] = 0.0
+    if mode in ('translation', 'translation_scale', 'bbox'):
+        smoothed[:, 3] = 0.0
     smoothed_matrices = [similarity_matrix(row[:2], math.exp(row[2]), row[3], reference_center) for row in smoothed]
     rebase = np.linalg.inv(smoothed_matrices[reference_index])
     final_matrices = [matrix @ rebase for matrix in smoothed_matrices]
@@ -151,7 +156,7 @@ def track_memory(job, progress=None):
         crop_box = [center_x-side/2, center_y-side/2, center_x+side/2, center_y+side/2]
         records.append(dict(frame=record["frame"], center=center.tolist(),
             translate=(center-reference_center).tolist(), scale=float(math.exp(log_scale)),
-            rotate=float(math.degrees(smoothed[index, 3] - smoothed[reference_index, 3])),
+            rotate=float(math.degrees(angle)),
             cornerpin=(matrix @ ref_corners.T).T[:, :2].tolist(),
             bbox=boxes[index], crop_box=crop_box, mask_path=record.get("mask_path"),
             status=statuses[index], confidence=float(confidence[index]),

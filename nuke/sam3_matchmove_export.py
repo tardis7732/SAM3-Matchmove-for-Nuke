@@ -1,5 +1,6 @@
 """Create one selected native Nuke output, without importing ML dependencies."""
 from pathlib import Path
+import math
 
 
 OUTPUT_CHOICES = ('Tracker', 'Matchmove', 'Stabilize', 'Plate Stabilize Crop',
@@ -35,6 +36,23 @@ def crop_mapping(row, width, height):
     scale = (right - left) / min(width, height)
     return ([(left + right - width * scale) / 2,
              (bottom + top - height * scale) / 2], [scale, scale])
+
+
+def crop_motion_mapping(row, reference, width, height):
+    """Map output crop pixels to plate pixels using the solved similarity.
+
+    The reference crop defines framing and output aspect; its center follows the
+    solved center, scale and rotation. Plate-to-crop uses this exact inverse.
+    """
+    box = reference['crop_box']
+    scale = (box[2] - box[0]) / min(width, height) * row['scale'] / reference['scale']
+    angle = row['rotate'] - reference['rotate']
+    cosine, sine = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+    x, y = width / 2, height / 2
+    center = row['center']
+    offset = [center[0] - scale * (cosine*x - sine*y),
+              center[1] - scale * (sine*x + cosine*y)]
+    return offset, [scale, scale], angle
 
 
 def _reserve_export_path(directory, stem):
@@ -133,9 +151,12 @@ def build_output(controller, data, choice, export_nk=True):
             transform = make('Transform', key, name, source if crop else None)
             transform['center'].setValue([0, 0])
             transform['invert_matrix'].setValue(crop)
-            sm._keys(transform['translate'], data['frames'], lambda row: crop_mapping(row, width, height)[0], 2)
+            reference = next(row for row in data['frames'] if row['frame'] == data['reference_frame'])
+            sm._keys(transform['translate'], data['frames'], lambda row: crop_motion_mapping(row, reference, width, height)[0], 2)
             sm._keys(transform['scale'], data['frames'],
-                     lambda row: crop_mapping(row, width, height)[1], 2)
+                     lambda row: crop_motion_mapping(row, reference, width, height)[1], 2)
+            sm._keys(transform['rotate'], data['frames'],
+                     lambda row: crop_motion_mapping(row, reference, width, height)[2], 1)
             if not crop:
                 transform['label'].setValue('Connect %d x %d\ncropped / generated footage' % (width, height))
             reformat = make('Reformat', 'crop' if crop else 'uncrop_format',

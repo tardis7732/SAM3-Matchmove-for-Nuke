@@ -23,6 +23,7 @@ Windows x64용 OFX 바이너리를 포함합니다. **일반 설치에는 C++ �
 - Analyze는 Reference frame에서 선택한 객체 ID를 기준으로 앞뒤 프레임을 영상 추적합니다. Object index는 기준 프레임에서만 면적순으로 대상을 선택합니다.
 - 분석 후 프레임 이동·재생은 RAM에 저장된 결과를 사용하며 SAM3를 재추론하지 않습니다.
 - View는 **Plate / Mask / Plate + mask alpha / Mask overlay**, 기본은 Mask입니다.
+- Motion은 **Translation / Translation + Scale / Translation + Rotation** 중에서 선택합니다. 크롭 출력도 선택한 움직임을 안정화하며, 출력 해상도는 Crop size를 유지합니다.
 - Export는 **Tracker / Matchmove / Stabilize / Plate Stabilize Crop / Generated Crop Matchmove**를 노드 아래에 만듭니다.
 
 ## 처음 설치하기
@@ -126,7 +127,7 @@ Matchmove와 Generated Crop Matchmove에는 삽입 영상을 연결하세요. �
 - 입력 영상·검출 설정·Reference frame 변경은 Analyze부터, Motion / Smoothing / Crop margin 변경은 Solve만 다시 실행합니다.
 - 선택한 객체 ID가 없는 프레임은 빈 마스크로 남깁니다. 다른 대상의 면적이 커졌다는 이유로 선택을 바꾸지 않습니다. 가림이나 복잡한 움직임에 의한 모델의 추적 오류는 결과에서 확인하세요.
 - RAM 용량이 부족하면 분석 구간을 줄이거나 입력 해상도를 낮추세요.
-- BBox는 위치와 균일 스케일을 계산합니다. Features는 회전도 추정하지만 실패하면 BBox로 대체될 수 있습니다. 3D pose·카메라·perspective solver는 아닙니다.
+- Translation은 이동만, Translation + Scale은 이동과 균일 스케일, Translation + Rotation은 이동과 회전을 계산합니다. 회전 모드의 스케일은 1로 고정합니다. 영상 특징이 부족한 회전 추정 구간은 결과를 확인하세요. 3D pose·카메라·perspective solver는 아닙니다.
 
 ## 소스에서 빌드할 경우
 

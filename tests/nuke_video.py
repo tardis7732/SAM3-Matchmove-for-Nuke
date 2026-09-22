@@ -39,6 +39,13 @@ assert engine['playbackToken'].value() == token
 assert group.sample('rgba.alpha', 12, 44) == 1, 'Failed Analyze replaced the previous mask batch'
 result = memory.solve(group)
 assert result['frames'][-1]['translate'] == [1.0, 0.0], result['frames'][-1]
+for label, mode in unified.MOTION_MODES.items():
+    group['tracking_mode'].setValue(label)
+    result = memory.solve(group)
+    assert result['tracking_mode'] == mode
+    assert engine['playbackToken'].value() == token
+    if label != 'Translation + Scale':
+        assert all(abs(row['scale'] - 1) < 1e-9 for row in result['frames'])
 for choice in unified.EXPORT_CHOICES:
     assert unified.export_output(group, choice)
 group['reference_frame'].setValue(100)

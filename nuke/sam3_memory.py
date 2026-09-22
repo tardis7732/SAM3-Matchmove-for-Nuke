@@ -231,7 +231,7 @@ def solve(group):
         return unified.fail(group, ValueError('This range includes frames without RAM masks. Analyze the new range first.'))
     job = {'width': batch['width'], 'height': batch['height'], 'frames': list(range(first, last + 1)),
            'reference_frame': reference,
-           'tracking_mode': 'features' if controller['tracking_mode'].value().startswith('Features') else 'bbox',
+           'tracking_mode': unified.MOTION_MODES[controller['tracking_mode'].value()],
            'smoothing_window': int(controller['smoothing_window'].value()),
            'crop_margin': float(controller['crop_margin'].value()),
            'fixed_crop': bool(controller['fixed_crop'].value()), 'pixel_aspect': 1.0}

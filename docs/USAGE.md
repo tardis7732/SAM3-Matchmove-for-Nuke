@@ -67,8 +67,9 @@ Mask overlay는 원본 alpha를 유지하며 alpha 없는 RGB 입력도 지원�
 Analyze 결과를 확인한 뒤 **Motion**을 설정하고 **Solve**를 실행하세요.
 Solve는 저장된 마스크와 흑백 영상만 CPU로 처리하며 SAM3를 다시 호출하지 않습니다.
 
-- **BBox position + scale**: 마스크 경계로 이동과 균일 스케일을 계산합니다. 회전은 측정하지 않습니다.
-- **Features**: 마스크 내부 영상 특징으로 이동·스케일·회전을 계산합니다. 실패 시 BBox로 대체될 수 있습니다.
+- **Translation**: 이동만 적용합니다. 스케일은 1, 회전은 0입니다.
+- **Translation + Scale**: 이동과 균일 스케일을 적용합니다. 회전은 0입니다.
+- **Translation + Rotation**: 이동과 회전을 적용합니다. 스케일은 1로 고정합니다.
 - **Reference frame**: Analyze에서 추적 대상을 선택하고 Solve에서 움직임의 기준으로 사용하는 프레임입니다. 대상이 보이는 프레임을 Analyze 전에 지정하세요. 변경하면 Analyze부터 다시 실행합니다.
 - **Smoothing**: 양의 홀수 프레임 윈도 크기입니다. 1은 추가 평활화 없음입니다.
 - **Crop margin**: 마스크 경계에 대한 여유 배율이며 1 이상을 사용합니다.
@@ -89,6 +90,9 @@ Solve 후 Output에서 종류를 선택하고 Export합니다.
 - Stabilize: 원본 안정화 Transform.
 - Plate Stabilize Crop: 안정화 크롭을 만드는 Transform + Reformat.
 - Generated Crop Matchmove: 생성·수정한 크롭을 원래 plate 좌표로 되돌리는 Transform + Reformat.
+
+Plate Stabilize Crop은 기준 프레임의 크롭 영역에 Solve의 이동·스케일·회전을 적용한 변환의 역변환을 사용합니다.
+Crop size는 출력 해상도이며, 대상을 따라가는 스케일 변화와 별개입니다. Generated Crop Matchmove는 같은 변환으로 원본 위치·크기·회전을 복원합니다.
 
 생성 노드는 SAM3 아래에 배치됩니다.
 Tracker / Stabilize / Plate Stabilize Crop은 원본 입력에 연결됩니다.

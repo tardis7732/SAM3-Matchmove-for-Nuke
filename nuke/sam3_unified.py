@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 ACTIVE = {}
 EXPORT_CHOICES = ['Tracker', 'Matchmove', 'Stabilize', 'Plate Stabilize Crop', 'Generated Crop Matchmove']
 VIEW_CHOICES = ['Plate', 'Mask', 'Plate + mask alpha', 'Mask overlay']
+MOTION_CHOICES = ['Translation', 'Translation + Scale', 'Translation + Rotation']
+MOTION_MODES = dict(zip(MOTION_CHOICES, ('translation', 'translation_scale', 'translation_rotation')))
+MIGRATING_MOTION = set()
 
 
 def matchmove():
@@ -245,6 +248,23 @@ def ensure_compact_controls(group):
 
 
 def ensure_solve_controls(group):
+    controller = group.node('ANALYSIS')
+    motion = controller['tracking_mode']
+    if list(motion.values()) != MOTION_CHOICES:
+        old = motion.value()
+        selected = old if old in MOTION_CHOICES else (
+            'Translation + Rotation' if old.startswith('Features') else 'Translation + Scale')
+        MIGRATING_MOTION.add(group.fullName())
+        try:
+            motion.setValues(MOTION_CHOICES)
+            motion.setValue(selected)
+        finally:
+            MIGRATING_MOTION.discard(group.fullName())
+        if old.startswith('Features') and group.knob('analysisReady'):
+            group['analysisReady'].setValue(False)
+            group['status'].setValue('Motion mode updated - Solve again before Export')
+    motion.setTooltip('Translation: position only. Translation + Scale: position and uniform scale. '
+                      'Translation + Rotation: position and rotation, with scale fixed at 1. Run Solve after changes.')
     if not group.knob('solveMotion'):
         button(group, 'solveMotion', 'Solve', 'solve')
     knobs = group.knobs()
@@ -497,6 +517,8 @@ def engine_changed(engine, knob):
 
 def changed(group, knob):
     try:
+        if group.fullName() in MIGRATING_MOTION:
+            return
         ready = group.knob('analysisReady')
         name = knob.name()
     except (ValueError, RuntimeError):
