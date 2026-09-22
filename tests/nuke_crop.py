@@ -29,7 +29,7 @@ def near(a, b):
     assert all(abs(x-y) < 2e-3 for x, y in zip(a, b)), (a, b)
 
 for label, scale, angle in (('Translation', 1., 0.), ('Translation + Scale', .418, 0.),
-                            ('Translation + Rotation', 1., 37.)):
+                            ('Translation + Scale + Rotation', .418, 37.)):
     group['tracking_mode'].setValue(label)
     for width, height in ((720, 720), (1280, 720), (720, 1280)):
         group['aspect_lock'].setValue(False)

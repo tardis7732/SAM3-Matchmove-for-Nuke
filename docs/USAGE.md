@@ -69,7 +69,7 @@ Solve는 저장된 마스크와 흑백 영상만 CPU로 처리하며 SAM3를 다
 
 - **Translation**: 이동만 적용합니다. 스케일은 1, 회전은 0입니다.
 - **Translation + Scale**: 이동과 균일 스케일을 적용합니다. 회전은 0입니다.
-- **Translation + Rotation**: 이동과 회전을 적용합니다. 스케일은 1로 고정합니다.
+- **Translation + Scale + Rotation**: 이동·균일 스케일·회전을 모두 적용합니다.
 - **Reference frame**: Analyze에서 추적 대상을 선택하고 Solve에서 움직임의 기준으로 사용하는 프레임입니다. 대상이 보이는 프레임을 Analyze 전에 지정하세요. 변경하면 Analyze부터 다시 실행합니다.
 - **Smoothing**: 양의 홀수 프레임 윈도 크기입니다. 1은 추가 평활화 없음입니다.
 - **Crop margin**: 마스크 경계에 대한 여유 배율이며 1 이상을 사용합니다.

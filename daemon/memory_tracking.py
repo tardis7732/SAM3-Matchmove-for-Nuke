@@ -26,7 +26,7 @@ def validate_memory_job(job):
         raise TrackingError('Frames must be contiguous')
     if job['reference_frame'] not in numbers:
         raise TrackingError('Reference must be inside the analysis range')
-    if job.get('tracking_mode', 'bbox') not in ('bbox', 'features', 'translation', 'translation_scale', 'translation_rotation'):
+    if job.get('tracking_mode', 'bbox') not in ('bbox', 'features', 'translation', 'translation_scale', 'translation_rotation', 'translation_scale_rotation'):
         raise TrackingError('Invalid motion mode')
     window = job.get('smoothing_window', 1)
     if type(window) is not int or window < 1 or window % 2 != 1:
@@ -48,7 +48,7 @@ def track_memory(job, progress=None):
     width, height = job["width"], job["height"]
     reference_index = next(i for i, item in enumerate(frames) if item["frame"] == job["reference_frame"])
     mode = job.get("tracking_mode", "bbox")
-    use_features = mode in ('features', 'translation_rotation')
+    use_features = mode in ('features', 'translation_rotation', 'translation_scale_rotation')
     records, warnings = [], []
     boxes = []
     # Decode each source once. The forward/backward feature passes retain only

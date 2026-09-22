@@ -42,19 +42,19 @@ class MotionCropTests(unittest.TestCase):
         second = export.crop_motion_mapping(row, reference, 720, 720)
         self.assertAlmostEqual(second[1][0] / first[1][0], 2.)
 
-    def test_rotation_excludes_estimated_scale(self):
+    def test_rotation_includes_estimated_scale(self):
         theta = math.radians(30)
         pair = np.eye(3)
         pair[:2, :2] = 1.5 * np.array([[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]])
         with patch.object(tracking, '_estimate_pair', return_value=(pair, 1., None)):
-            result = tracking.track_memory(self.job('translation_rotation'))
+            result = tracking.track_memory(self.job('translation_scale_rotation'))
         row = result['frames'][1]
-        self.assertAlmostEqual(row['scale'], 1.)
+        self.assertAlmostEqual(row['scale'], 1.5)
         self.assertAlmostEqual(row['rotate'], -30.)
         self.assertEqual(row['status'], 'features')
-        # Derived corners must also use the restricted transform, not the raw scale estimate.
+        # Derived corners must retain the solved scale as well as rotation.
         corners = np.array(row['cornerpin'])
-        self.assertAlmostEqual(np.linalg.norm(corners[1]-corners[0]), 10.)
+        self.assertAlmostEqual(np.linalg.norm(corners[1]-corners[0]), 15.)
 
     def test_crop_center_scale_and_inverse_for_all_aspects(self):
         reference = dict(crop_box=[300., 200., 504., 404.], center=[402., 302.], scale=1., rotate=0.)

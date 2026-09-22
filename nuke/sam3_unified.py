@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ACTIVE = {}
 EXPORT_CHOICES = ['Tracker', 'Matchmove', 'Stabilize', 'Plate Stabilize Crop', 'Generated Crop Matchmove']
 VIEW_CHOICES = ['Plate', 'Mask', 'Plate + mask alpha', 'Mask overlay']
-MOTION_CHOICES = ['Translation', 'Translation + Scale', 'Translation + Rotation']
-MOTION_MODES = dict(zip(MOTION_CHOICES, ('translation', 'translation_scale', 'translation_rotation')))
+MOTION_CHOICES = ['Translation', 'Translation + Scale', 'Translation + Scale + Rotation']
+MOTION_MODES = dict(zip(MOTION_CHOICES, ('translation', 'translation_scale', 'translation_scale_rotation')))
 MIGRATING_MOTION = set()
 
 
@@ -253,18 +253,18 @@ def ensure_solve_controls(group):
     if list(motion.values()) != MOTION_CHOICES:
         old = motion.value()
         selected = old if old in MOTION_CHOICES else (
-            'Translation + Rotation' if old.startswith('Features') else 'Translation + Scale')
+            'Translation + Scale + Rotation' if old.startswith('Features') or old == 'Translation + Rotation' else 'Translation + Scale')
         MIGRATING_MOTION.add(group.fullName())
         try:
             motion.setValues(MOTION_CHOICES)
             motion.setValue(selected)
         finally:
             MIGRATING_MOTION.discard(group.fullName())
-        if old.startswith('Features') and group.knob('analysisReady'):
+        if old == 'Translation + Rotation' and group.knob('analysisReady'):
             group['analysisReady'].setValue(False)
             group['status'].setValue('Motion mode updated - Solve again before Export')
     motion.setTooltip('Translation: position only. Translation + Scale: position and uniform scale. '
-                      'Translation + Rotation: position and rotation, with scale fixed at 1. Run Solve after changes.')
+                      'Translation + Scale + Rotation: position, uniform scale and rotation. Run Solve after changes.')
     if not group.knob('solveMotion'):
         button(group, 'solveMotion', 'Solve', 'solve')
     knobs = group.knobs()

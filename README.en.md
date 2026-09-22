@@ -46,7 +46,7 @@ Obtain model access before running authentication/download. Fully restart Nuke, 
 2. Set **Frame range**. Reset reads the connected input range and sets Reference frame to its first frame.
 3. Set **Reference frame** where the target is visible and choose **Object index**. Run **Analyze** to track that object ID in both directions and store the masks in RAM.
 4. Inspect **View**: Plate, Mask (default), Plate + mask alpha, or Mask overlay. Overlay adds red at 50% inside the mask.
-5. Choose **Motion** (Translation, Translation + Scale, or Translation + Rotation), then press **Solve**. It calculates tracks relative to the analyzed Reference frame from stored masks and grayscale frames in a separate CPU process without SAM3 inference.
+5. Choose **Motion** (Translation, Translation + Scale, or Translation + Scale + Rotation), then press **Solve**. It calculates tracks relative to the analyzed Reference frame from stored masks and grayscale frames in a separate CPU process without SAM3 inference.
 6. Change Smoothing or Crop margin and run Solve again. Crop size and Aspect ratio apply on the next Export without another Solve.
 7. Select **Output** and **Export**. Native nodes are placed below SAM3.
 
@@ -69,7 +69,7 @@ Plate Stabilize Crop removes the selected motion while keeping the requested out
 - Changing the plate, detection settings, or Reference frame requires Analyze again. Motion, Smoothing, or Crop margin changes require only Solve. A range containing uncached frames requires Analyze first.
 - Frames without the selected object ID receive an empty mask; a larger competing object is not substituted. Review occlusions and complex motion for model tracking errors.
 - Reduce the analysis range or input resolution if the RAM cache reaches capacity.
-- Translation applies position only; Translation + Scale also applies uniform scale; Translation + Rotation applies position and rotation with scale fixed at 1. Review rotation estimates where image detail is insufficient. This is not a 3D pose, perspective, or camera solver.
+- Translation applies position only; Translation + Scale also applies uniform scale; Translation + Scale + Rotation applies position, uniform scale and rotation together. Review rotation estimates where image detail is insufficient. This is not a 3D pose, perspective, or camera solver.
 - Use square pixels and correctly configured Read colorspace. The default input encoding is linear sRGB / Rec.709. Convert ACEScg before the node.
 
 ## Build from source

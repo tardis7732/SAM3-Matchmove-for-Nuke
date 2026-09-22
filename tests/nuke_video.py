@@ -44,7 +44,7 @@ for label, mode in unified.MOTION_MODES.items():
     result = memory.solve(group)
     assert result['tracking_mode'] == mode
     assert engine['playbackToken'].value() == token
-    if label != 'Translation + Scale':
+    if label == 'Translation':
         assert all(abs(row['scale'] - 1) < 1e-9 for row in result['frames'])
 for choice in unified.EXPORT_CHOICES:
     assert unified.export_output(group, choice)
