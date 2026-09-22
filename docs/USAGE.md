@@ -41,7 +41,7 @@ OFX는 Nuke가 제공하는 픽셀로 Analyze하므로 분석용 Write·입력 �
 
 - **Target**: 찾을 대상을 텍스트로 입력합니다. 예: `ball`, `red car`.
 - **Confidence**: 검출을 채택하는 최소 점수입니다. 높이면 오검출이 줄지만 대상이 빠지는 프레임이 생길 수 있습니다.
-- **Object index**: 면적순 검출 영역 번호입니다. 0은 가장 큰 영역입니다. 합집합이나 -1 모드는 없습니다.
+- **Object index**: 검출된 영역 중 사용할 대상을 선택합니다. 0은 가장 큰 영역입니다.
 - **Frame range**: Analyze 구간입니다. Reset은 입력 범위를 읽고 Reference frame을 시작 프레임으로 맞춥니다.
 - **Analyze**: 마스크와 Solve용 흑백 영상을 RAM에 생성합니다. 입력과 검출 설정이 일치하는 엔진 캐시는 재사용할 수 있습니다.
 
@@ -59,11 +59,11 @@ Analyze 전에는 Mask가 검은색입니다. 완료 후 프레임 이동·재�
 
 Plate + mask alpha는 RGB를 premultiply하지 않습니다. 필요한 경우 뒤에 Premult를 연결하세요.
 Mask overlay는 원본 alpha를 유지하며 alpha 없는 RGB 입력도 지원합니다.
-View에 안정화 항목은 없습니다. 안정화와 크롭은 Export로 만듭니다.
+안정화와 크롭은 Export로 만듭니다.
 
 ## Solve와 크롭
 
-**Motion / Reference frame / Solve**가 한 줄에 있습니다. Analyze 완료 후 Solve를 실행하세요.
+Analyze 결과를 확인한 뒤 **Motion**과 **Reference frame**을 설정하고 **Solve**를 실행하세요.
 Solve는 저장된 마스크와 흑백 영상만 CPU로 처리하며 SAM3를 다시 호출하지 않습니다.
 
 - **BBox position + scale**: 마스크 경계로 이동과 균일 스케일을 계산합니다. 회전은 측정하지 않습니다.
@@ -72,14 +72,12 @@ Solve는 저장된 마스크와 흑백 영상만 CPU로 처리하며 SAM3를 다
 - **Smoothing**: 양의 홀수 프레임 윈도 크기입니다. 1은 추가 평활화 없음입니다.
 - **Crop margin**: 마스크 경계에 대한 여유 배율이며 1 이상을 사용합니다.
 
-Smoothing과 Crop margin은 각각 한 줄입니다. 값을 바꾸면 Solve를 다시 실행합니다.
+Smoothing과 Crop margin을 바꾸면 Solve를 다시 실행합니다.
 
-**Crop size [가로] × [세로] / Aspect ratio / Lock ratio**는 한 줄입니다.
+**Crop size**는 출력 크기, **Aspect ratio**는 화면비를 설정합니다. **Lock ratio**를 켜면 크기 변경 시 화면비를 유지합니다.
 기본은 720 × 720 / 1:1이며 화면비 프리셋 변경 시 Height를 유지합니다.
 화면비는 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2.39:1, Custom을 지원합니다.
 크기와 화면비는 다음 Export에 적용되므로 Solve를 다시 실행할 필요가 없습니다.
-
-Input encoding / Refresh mask / Engine status / Stop engine 버튼과 Adjustments 탭은 메인 Properties에서 숨깁니다.
 
 ## Export
 
@@ -91,7 +89,7 @@ Solve 후 Output에서 종류를 선택하고 Export합니다.
 - Plate Stabilize Crop: 안정화 크롭을 만드는 Transform + Reformat.
 - Generated Crop Matchmove: 생성·수정한 크롭을 원래 plate 좌표로 되돌리는 Transform + Reformat.
 
-생성 노드는 SAM3 아래에 배치하며, 이전에 내보낸 노드와 겹치지 않게 추가됩니다.
+생성 노드는 SAM3 아래에 배치됩니다.
 Tracker / Stabilize / Plate Stabilize Crop은 원본 입력에 연결됩니다.
 Matchmove와 Generated Crop Matchmove의 비어 있는 입력에는 삽입 영상을 연결합니다.
 크롭 복원용 영상은 Export 당시 Crop size와 같은 크기를 사용하세요.
@@ -109,8 +107,8 @@ Nuke를 종료하거나 스크립트를 다시 열면 마스크를 위해 Analyz
 외부 GPU 엔진은 유휴 상태에서 종료될 수 있습니다. 같은 Nuke 세션의 RAM 재생과 CPU Solve는 계속 사용할 수 있고,
 다음 Analyze가 엔진을 다시 시작합니다. RAM 한도에 도달하면 더 짧은 구간이나 작은 입력을 사용하세요.
 
-## 제한
+## 결과 확인
 
-프레임마다 독립 검출하므로 객체 ID를 고정하지 않습니다. 여러 대상의 크기 순위가 바뀌면 index의 대상도 달라질 수 있습니다.
+대상이 여러 개이거나 서로 교차하는 샷에서는 Analyze 결과에서 원하는 대상이 구간 전체에 걸쳐 선택되었는지 확인하세요.
 없는 마스크나 특징 추적 실패 구간은 보간·유지·BBox 대체를 포함할 수 있으므로 Export 전에 확인하세요.
 이 도구는 2D 대상 매치무브이며 3D 카메라·pose·perspective solve가 아닙니다.

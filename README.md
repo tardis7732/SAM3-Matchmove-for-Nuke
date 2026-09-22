@@ -14,17 +14,16 @@ https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
 마스크를 파일로 저장하고 별도 Read로 불러오는 과정 없이, 같은 SAM3 노드에서 Plate·Mask·Overlay를 확인합니다.
 
 Windows x64용 OFX 바이너리를 포함합니다. **일반 설치에는 C++ 빌드 도구가 필요하지 않습니다.**
-모델과 별도 Python 환경은 아래 순서대로 준비합니다. README의 데모는 유지하며, 별도 원본 예제 파일·작업 `.nk`·모델은 배포에 포함하지 않습니다.
+모델과 별도 Python 환경은 아래 순서대로 준비합니다.
 
-## OFX 업데이트 내용
+## 주요 기능
 
 - 네이티브 OFX가 Nuke의 입력 픽셀과 RAM 마스크 재생을 처리합니다.
-- **Analyze / Solve 분리**: Motion이나 Reference frame을 바꾸면 저장된 마스크로 Solve만 다시 합니다.
+- **Analyze**로 지정한 구간의 마스크를 생성하고, **Solve**로 저장된 마스크의 움직임을 계산합니다.
 - 자동 마스크 PNG·분석용 입력 시퀀스·결과 JSON/CSV를 만들지 않습니다.
 - 분석 후 프레임 이동·재생은 RAM에 저장된 결과를 사용하며 SAM3를 재추론하지 않습니다.
 - View는 **Plate / Mask / Plate + mask alpha / Mask overlay**, 기본은 Mask입니다.
 - Export는 **Tracker / Matchmove / Stabilize / Plate Stabilize Crop / Generated Crop Matchmove**를 노드 아래에 만듭니다.
-- 내부 그래프는 View에 필요한 노드만 유지하고, 안정화·크롭 노드는 Export할 때 생성합니다.
 
 ## 처음 설치하기
 
@@ -101,17 +100,12 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 ## 사용 순서
 
 1. `Read → SAM3 Mask OFX → Viewer`로 연결하고 Target에 `ball`, `red car` 같은 대상을 입력합니다.
-2. **Frame range [시작] [끝] Reset Analyze**에서 구간을 정합니다. Reset은 입력 범위를 읽고 Reference frame을 시작 프레임으로 맞춥니다.
+2. **Frame range**에서 구간을 정합니다. Reset은 입력 범위를 읽고 Reference frame을 시작 프레임으로 맞춥니다.
 3. **Analyze**로 해당 구간의 마스크를 RAM에 만듭니다. 처음에는 모델 로딩 시간이 추가됩니다.
 4. **View**로 결과를 확인합니다. Mask overlay는 마스크 영역에 빨간색을 50%로 겹칩니다.
 5. **Motion / Reference frame / Solve**에서 모드와 기준을 정하고 **Solve**를 실행합니다.
 6. Smoothing이나 Crop margin을 바꾸면 Solve를 다시 실행합니다. Crop size / Aspect ratio 변경은 다음 Export에 적용됩니다.
 7. **Output**에서 종류를 선택하고 **Export**합니다. 생성 노드는 SAM3 아래에 배치됩니다.
-
-Smoothing과 Crop margin은 Motion 아래에 각각 한 줄씩 있습니다. Crop size / Aspect ratio / Lock ratio는 그 아래 한 줄입니다.
-기본 크기는 **720 × 720, 1:1**이며 화면비 프리셋은 Height를 유지합니다.
-Confidence는 최소 검출 점수, Object index는 면적순 대상 번호입니다. 두 값은 슬라이더 없는 숫자 입력입니다.
-Input encoding·Refresh mask·Engine status·Stop engine / free GPU와 별도 Adjustments 탭은 메인 UI에서 숨깁니다.
 
 | Output | 생성 결과 |
 | --- | --- |
@@ -124,15 +118,13 @@ Input encoding·Refresh mask·Engine status·Stop engine / free GPU와 별도 Ad
 Tracker / Stabilize / Plate Stabilize Crop은 원본 입력에 연결됩니다.
 Matchmove와 Generated Crop Matchmove에는 삽입 영상을 연결하세요. 마스크는 **View → Mask** 출력으로 사용합니다.
 
-## RAM 동작과 제한
+## 결과 확인과 저장
 
 - Analyze 전과 저장된 범위 밖의 Mask는 검은색입니다. 프레임 이동만으로 자동 추론하지 않습니다.
 - RAM 마스크는 `.nk`에 저장되지 않습니다. Nuke 종료·스크립트 재열기 후 마스크를 보려면 Analyze가 필요합니다.
 - Solve 결과는 노드 데이터로 저장되므로 `.nk`에 저장한 움직임은 다시 Export할 수 있습니다. Export된 기본 노드는 독립적으로 사용합니다.
 - 입력 영상·검출 설정 변경은 Analyze부터, Motion / Reference / Smoothing / Crop margin 변경은 Solve만 다시 실행합니다.
-- GPU 엔진이 종료되어도 같은 Nuke 세션의 RAM 재생과 CPU Solve는 가능합니다. Nuke 자체의 GPU 메모리까지 해제하는 기능은 아닙니다.
-- 기본 예산은 엔진 캐시 512 MiB, 비트 압축 재생 마스크 구간당 512 MiB, 압축 Python Solve 데이터 전체 512 MiB입니다. 모델·압축 해제·계산용 임시 메모리는 별도입니다. 한도를 넘으면 오류를 표시하며 디스크로 저장하지 않습니다.
-- OFX는 프레임마다 독립 검출합니다. **동일 객체 ID를 영상 전체에 고정하지 않습니다.** 면적 순위가 바뀌면 Object index의 대상도 달라질 수 있습니다.
+- RAM 용량이 부족하면 분석 구간을 줄이거나 입력 해상도를 낮추세요.
 - BBox는 위치와 균일 스케일을 계산합니다. Features는 회전도 추정하지만 실패하면 BBox로 대체될 수 있습니다. 3D pose·카메라·perspective solver는 아닙니다.
 
 ## 소스에서 빌드할 경우
@@ -154,9 +146,8 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -SkipBuild -BuildDirectory 
 - **Unknown OFX plugin**: `ofx/prebuilt/.../SAM3Mask.ofx`와 그 옆 cfg를 확인하고 루트 install을 다시 실행하세요.
 - **Python / 모델 경로 오류**: 외부 Python과 공식 `sam3.pt`의 준비를 확인하고 configure를 다시 실행하세요. 설치 폴더를 이동한 경우도 configure / install이 필요합니다.
 - **입력 색상 / 크기 문제**: Read 색공간을 올바르게 지정하세요. 기본 입력은 linear sRGB / Rec.709이며 ACEScg는 노드 앞에서 변환합니다. square pixel 입력을 사용하세요.
-- **Properties 오류 이후**: 작업을 저장하고 Nuke를 완전히 종료한 뒤 다시 실행하세요. 현재 UI는 기본 버튼 표시를 사용하고 노브 이관 전에 열린 패널을 닫습니다.
 
-Nuke 17.1v1에서 RAM 생성·재생, 엔진 종료 후 Solve, View / Overlay, 기본 노드 Export, Properties 열기·닫기를 검사했습니다.
+Nuke 17.1v1에서 RAM 생성·재생, Solve, View / Overlay, 기본 노드 Export를 검사했습니다.
 아래 저장소 테스트에는 예제 영상이나 모델이 필요하지 않습니다.
 
 ```powershell
