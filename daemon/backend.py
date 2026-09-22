@@ -39,6 +39,18 @@ class Sam3Backend:
         self.image_state = None
         self.metrics = {}
 
+    def release_image(self):
+        if self.processor is not None:
+            import gc
+            import torch
+            self.processor = self.image_state = self.image_hash = None
+            gc.collect()
+            torch.cuda.empty_cache()
+
+    def track_video(self, images, reference, prompt, confidence, object_index, cancelled):
+        from video_backend import track
+        return track(self.checkpoint, images, reference, prompt, confidence, object_index, cancelled)
+
     def predict(self, rgb, prompt, confidence, object_index):
         import torch
         from PIL import Image

@@ -20,6 +20,7 @@ Windows x64용 OFX 바이너리를 포함합니다. **일반 설치에는 C++ �
 
 - 네이티브 OFX가 Nuke의 입력 픽셀과 RAM 마스크 재생을 처리합니다.
 - **Analyze**로 지정한 구간의 마스크를 생성하고, **Solve**로 저장된 마스크의 움직임을 계산합니다.
+- Analyze는 Reference frame에서 선택한 객체 ID를 기준으로 앞뒤 프레임을 영상 추적합니다. Object index는 기준 프레임에서만 면적순으로 대상을 선택합니다.
 - 분석 후 프레임 이동·재생은 RAM에 저장된 결과를 사용하며 SAM3를 재추론하지 않습니다.
 - View는 **Plate / Mask / Plate + mask alpha / Mask overlay**, 기본은 Mask입니다.
 - Export는 **Tracker / Matchmove / Stabilize / Plate Stabilize Crop / Generated Crop Matchmove**를 노드 아래에 만듭니다.
@@ -100,9 +101,9 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 1. `Read → SAM3 Mask OFX → Viewer`로 연결하고 Target에 `ball`, `red car` 같은 대상을 입력합니다.
 2. **Frame range**에서 구간을 정합니다. Reset은 입력 범위를 읽고 Reference frame을 시작 프레임으로 맞춥니다.
-3. **Analyze**로 해당 구간의 마스크를 RAM에 만듭니다. 처음에는 모델 로딩 시간이 추가됩니다.
+3. 대상이 보이는 **Reference frame**과 **Object index**를 정한 뒤 **Analyze**합니다. 같은 객체 ID를 앞뒤로 추적한 마스크를 RAM에 저장합니다.
 4. **View**로 결과를 확인합니다. Mask overlay는 마스크 영역에 빨간색을 50%로 겹칩니다.
-5. **Motion / Reference frame / Solve**에서 모드와 기준을 정하고 **Solve**를 실행합니다.
+5. **Motion**을 선택하고 **Solve**를 실행합니다. 움직임은 Analyze에 사용한 Reference frame을 기준으로 계산합니다.
 6. Smoothing이나 Crop margin을 바꾸면 Solve를 다시 실행합니다. Crop size / Aspect ratio 변경은 다음 Export에 적용됩니다.
 7. **Output**에서 종류를 선택하고 **Export**합니다. 생성 노드는 SAM3 아래에 배치됩니다.
 
@@ -122,7 +123,8 @@ Matchmove와 Generated Crop Matchmove에는 삽입 영상을 연결하세요. �
 - Analyze 전과 저장된 범위 밖의 Mask는 검은색입니다. 프레임 이동만으로 자동 추론하지 않습니다.
 - RAM 마스크는 `.nk`에 저장되지 않습니다. Nuke 종료·스크립트 재열기 후 마스크를 보려면 Analyze가 필요합니다.
 - Solve 결과는 노드 데이터로 저장되므로 `.nk`에 저장한 움직임은 다시 Export할 수 있습니다. Export된 기본 노드는 독립적으로 사용합니다.
-- 입력 영상·검출 설정 변경은 Analyze부터, Motion / Reference / Smoothing / Crop margin 변경은 Solve만 다시 실행합니다.
+- 입력 영상·검출 설정·Reference frame 변경은 Analyze부터, Motion / Smoothing / Crop margin 변경은 Solve만 다시 실행합니다.
+- 선택한 객체 ID가 없는 프레임은 빈 마스크로 남깁니다. 다른 대상의 면적이 커졌다는 이유로 선택을 바꾸지 않습니다. 가림이나 복잡한 움직임에 의한 모델의 추적 오류는 결과에서 확인하세요.
 - RAM 용량이 부족하면 분석 구간을 줄이거나 입력 해상도를 낮추세요.
 - BBox는 위치와 균일 스케일을 계산합니다. Features는 회전도 추정하지만 실패하면 BBox로 대체될 수 있습니다. 3D pose·카메라·perspective solver는 아닙니다.
 

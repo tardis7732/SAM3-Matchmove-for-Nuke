@@ -12,6 +12,8 @@ https://github.com/user-attachments/assets/72ade68a-44d2-4ede-9832-d4da3031d503
 
 **Analyze -> RAM masks -> Solve -> Export native Nuke nodes.** The OFX plugin receives Nuke pixels and plays the completed mask batch directly from RAM. No temporary plate sequence, mask PNGs, or result JSON/CSV files are written by the new workflow.
 
+Analyze uses SAM3 video propagation in both directions from Reference frame. Object index selects a target by mask area on that frame only; subsequent frames use the selected object ID.
+
 A prebuilt **Windows x64 OFX** is included. Normal installation does **not** require C++ build tools. Prepare the separate Python environment and official SAM3 checkpoint using the steps below.
 
 ## Requirements
@@ -42,9 +44,9 @@ Obtain model access before running authentication/download. Fully restart Nuke, 
 
 1. Connect `Read -> SAM3 Mask OFX -> Viewer`. Enter a Target such as `ball` or `red car`.
 2. Set **Frame range**. Reset reads the connected input range and sets Reference frame to its first frame.
-3. Run **Analyze** to generate and store the complete mask batch in RAM.
+3. Set **Reference frame** where the target is visible and choose **Object index**. Run **Analyze** to track that object ID in both directions and store the masks in RAM.
 4. Inspect **View**: Plate, Mask (default), Plate + mask alpha, or Mask overlay. Overlay adds red at 50% inside the mask.
-5. Choose **Motion / Reference frame**, then press **Solve**. It calculates tracks from stored masks and grayscale frames in a separate CPU process without SAM3 inference.
+5. Choose **Motion**, then press **Solve**. It calculates tracks relative to the analyzed Reference frame from stored masks and grayscale frames in a separate CPU process without SAM3 inference.
 6. Change Smoothing or Crop margin and run Solve again. Crop size and Aspect ratio apply on the next Export without another Solve.
 7. Select **Output** and **Export**. Native nodes are placed below SAM3.
 
@@ -62,7 +64,8 @@ Tracker and plate stabilization outputs connect to the source. Connect your inse
 
 - Before Analyze, outside the stored range, and after reopening a script, the mask is black. Timeline playback never starts automatic inference.
 - RAM pixels are **not serialized into `.nk`**. Analyze again after reopening Nuke or the script. Saved Solve data can still be exported, and exported native nodes work independently.
-- Changing the plate or detection settings requires Analyze again. Motion, Reference, Smoothing, or Crop margin changes require only Solve. A range containing uncached frames requires Analyze first.
+- Changing the plate, detection settings, or Reference frame requires Analyze again. Motion, Smoothing, or Crop margin changes require only Solve. A range containing uncached frames requires Analyze first.
+- Frames without the selected object ID receive an empty mask; a larger competing object is not substituted. Review occlusions and complex motion for model tracking errors.
 - Reduce the analysis range or input resolution if the RAM cache reaches capacity.
 - BBox measures translation and uniform scale. Features can estimate rotation but may fall back to BBox; this is not a 3D pose, perspective, or camera solver.
 - Use square pixels and correctly configured Read colorspace. The default input encoding is linear sRGB / Rec.709. Convert ACEScg before the node.

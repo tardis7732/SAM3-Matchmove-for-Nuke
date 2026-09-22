@@ -57,7 +57,8 @@ def read_request(conn):
     if not isinstance(header, dict):
         raise ProtocolError("JSON header must be an object")
     cmd = header.get("cmd")
-    if cmd not in ("infer", "info", "shutdown", "capture_begin", "capture_finish", "capture_abort", "capture_frame"):
+    if cmd not in ("infer", "info", "shutdown", "capture_begin", "capture_finish", "capture_abort", "capture_frame",
+                   "video_begin", "video_start", "video_status", "video_frame", "video_abort"):
         raise ProtocolError("Unsupported command")
     expected = 0
     if cmd == "infer":

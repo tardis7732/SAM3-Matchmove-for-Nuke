@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import struct
 import subprocess
+import time
 import nuke
 
 CANCELLED = set()
@@ -37,6 +38,55 @@ def ensure(group):
         knob.setVisible(False)
 
 
+def _ensure_video_engine(engine, adapter):
+    port = int(engine['port'].value())
+    try:
+        info, _ = adapter._wire.request({'cmd': 'info'}, port=port, timeout=3)
+    except (OSError, ConnectionError):
+        info = None
+    if info is not None:
+        if info.get('engine') != 'SAM3 Mask':
+            raise RuntimeError('The configured port belongs to another service')
+        if info.get('video_tracking') == 1:
+            return
+        # Replace the obsolete image-only service; native RAM playback is retained in Nuke.
+        adapter._wire.request({'cmd': 'shutdown'}, port=port, timeout=3)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                adapter._wire.request({'cmd': 'info'}, port=port, timeout=.5)
+            except (OSError, ConnectionError):
+                break
+            time.sleep(.1)
+        else:
+            raise RuntimeError('The old SAM3 service is still stopping; retry Analyze')
+    root = Path(__file__).resolve().parents[1]
+    config = json.loads((root / 'config/frontend.json').read_text(encoding='utf-8-sig'))
+    env = dict(os.environ)
+    for name in ('PYTHONHOME', 'PYTHONPATH', 'PYTHONEXECUTABLE', 'PYTHONSTARTUP', 'NUKE_PATH',
+                 'QT_PLUGIN_PATH', 'QT_QPA_PLATFORM_PLUGIN_PATH'):
+        env.pop(name, None)
+    env['PATH'] = os.pathsep.join(p for p in env.get('PATH', '').split(os.pathsep)
+                               if not any(part.lower().startswith('nuke') for part in Path(p).parts))
+    env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONNOUSERSITE='1')
+    child = subprocess.Popen([config['python'], str(root / 'daemon/launcher.py'), '--port', str(port),
+                              '--parent-pid', str(os.getpid())], env=env, cwd=str(root),
+                              stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        try:
+            info, _ = adapter._wire.request({'cmd': 'info'}, port=port, timeout=.5)
+            if info.get('video_tracking') == 1:
+                return
+        except (OSError, ConnectionError):
+            pass
+        if child.poll() not in (None, 0):
+            break
+        time.sleep(.1)
+    raise RuntimeError('Cannot start the video tracking service. Check output/daemon.log')
+
+
 def analyze(group):
     import sam3_unified as unified
     import sam3_ofx_nuke as adapter
@@ -63,31 +113,51 @@ def analyze(group):
     unified.ACTIVE[token] = {'group': group, 'memory': True}
     started = False
     try:
-        engine['playbackOnly'].setValue(False)
-        group['status'].setValue('Preparing RAM cache...')
-        nuke.frame(first)
-        # Sampling a pixel evaluates the whole-frame OFX without a Write node.
-        fmt = group.input(0).format()
-        engine.sample('rgba.alpha', fmt.width() / 2, fmt.height() / 2)
-        if engine.error():
-            raise RuntimeError('Cannot read the input frame. Check the connected plate.')
-        before, _ = adapter._wire.request({'cmd': 'info'}, port=port, timeout=3)
-        if not before.get('ram_snapshot'):
-            raise RuntimeError('Stop the old engine using Stop engine / free GPU, then Analyze again')
-        adapter._wire.request({'cmd': 'capture_begin', 'token': token}, port=port, timeout=3)
+        # Start the service without evaluating a frame/image predictor.
+        _ensure_video_engine(engine, adapter)
+        adapter._wire.request({'cmd': 'video_begin', 'token': token,
+                               'first': first, 'last': last, 'reference': reference}, port=port, timeout=3)
         started = True
+        engine['playbackOnly'].setValue(False)
         engine['captureToken'].setValue(token)
+        fmt = group.input(0).format()
         for frame in range(first, last+1):
             if key in CANCELLED or (progress and progress.isCancelled()):
-                raise RuntimeError('Cancelled — no mask files were written')
+                raise RuntimeError('Video analysis cancelled')
             if progress:
-                progress.setMessage('Frame %d / %d — reuse preview cache or infer' % (frame, last))
-                progress.setProgress(int(90 * (frame-first) / (last-first+1)))
+                progress.setMessage('Reading source frame %d / %d' % (frame, last))
+                progress.setProgress(int(20 * (frame-first) / (last-first+1)))
+            nuke.frame(frame)
+            engine.sample('rgba.alpha', fmt.width()/2, fmt.height()/2)
+            if engine.error():
+                raise RuntimeError('Cannot read source frame %d' % frame)
+        adapter._wire.request({'cmd': 'video_start', 'token': token}, port=port, timeout=3)
+        while True:
+            if key in CANCELLED or (progress and progress.isCancelled()):
+                raise RuntimeError('Video analysis cancelled')
+            status, _ = adapter._wire.request({'cmd': 'video_status', 'token': token}, port=port, timeout=3)
+            group['status'].setValue(status['message'])
+            if progress:
+                progress.setMessage(status['message'])
+                progress.setProgress(20 + int(60 * status['progress']))
+            if status['state'] == 'error':
+                raise RuntimeError(status['error'])
+            if status['state'] == 'ready':
+                break
+            time.sleep(.1)
+        # Invalidate the host's upload-pass cache, then stage the completed tracked masks.
+        engine['cacheRevision'].setValue(int(engine['cacheRevision'].value()) + 1)
+        for frame in range(first, last+1):
+            if key in CANCELLED or (progress and progress.isCancelled()):
+                raise RuntimeError('Video analysis cancelled')
+            if progress:
+                progress.setMessage('Storing tracked mask %d / %d' % (frame, last))
+                progress.setProgress(80 + int(15 * (frame-first) / (last-first+1)))
             nuke.frame(frame)
             engine.sample('rgba.alpha', fmt.width()/2, fmt.height()/2)
             if engine.error():
                 raise RuntimeError('Failed to store frame %d in RAM' % frame)
-            snapshot, _ = adapter._wire.request({'cmd': 'capture_frame', 'token': token, 'frame': frame}, port=port)
+            snapshot, _ = adapter._wire.request({'cmd': 'video_frame', 'token': token, 'frame': frame}, port=port)
             if (snapshot['width'], snapshot['height']) != (fmt.width(), fmt.height()):
                 raise ValueError('Analyze at full resolution with a fixed input format')
             data = base64.b64decode(snapshot['data'])
@@ -98,7 +168,9 @@ def analyze(group):
         if progress:
             progress.setMessage('Storing RAM masks...')
             progress.setProgress(95)
-        adapter._wire.request({'cmd': 'capture_abort', 'token': token}, port=port, timeout=3)
+        engine['playbackOnly'].setValue(True)
+        engine['captureToken'].setValue('')
+        adapter._wire.request({'cmd': 'video_abort', 'token': token}, port=port, timeout=3)
         started = False
         with group:
             cached = group.node('CACHED_MASK')
@@ -111,15 +183,18 @@ def analyze(group):
             for node in nuke.allNodes('Write'):
                 if node.knob('sam3_owner') and node['sam3_owner'].value() == controller['sam3_id'].value():
                     nuke.delete(node)
-        BATCHES[token] = {'frames': frames, 'width': fmt.width(), 'height': fmt.height(), 'bytes': batch_bytes}
+        BATCHES[token] = {'frames': frames, 'width': fmt.width(), 'height': fmt.height(), 'bytes': batch_bytes,
+                         'reference_frame': reference, 'object_id': status['object_id'], 'temporal_tracking': True}
         group['analysisData'].setValue('')
         group['memoryMode'].setValue(True)
         controller['result_file'].setValue('')
         group['analysisReady'].setValue(False)
         engine['playbackToken'].setValue(token)
+        # Commit the staged native batch even if no Viewer is connected.
+        engine.sample('rgba.alpha', fmt.width()/2, fmt.height()/2)
         group['maskSource'].setValue('Analyzed')
         group['maskSource'].setTooltip('Plays the analyzed RAM batch. Run Analyze again to replace it.')
-        group['status'].setValue('Masks ready: %d-%d (%d frames). Solve to calculate motion.' % (first, last, last-first+1))
+        group['status'].setValue('Tracked masks ready: %d-%d / object %d. Solve to calculate motion.' % (first, last, status['object_id']))
         prune_batches()
         unified.layout_internal(group)
         if progress:
@@ -128,11 +203,11 @@ def analyze(group):
     except Exception as exc:
         return unified.fail(group, exc)
     finally:
-        engine['captureToken'].setValue('')
         engine['playbackOnly'].setValue(True)
+        engine['captureToken'].setValue('')
         if started:
             try:
-                adapter._wire.request({'cmd': 'capture_abort', 'token': token}, port=port, timeout=3)
+                adapter._wire.request({'cmd': 'video_abort', 'token': token}, port=port, timeout=3)
             except Exception:
                 pass
         nuke.frame(previous_frame)

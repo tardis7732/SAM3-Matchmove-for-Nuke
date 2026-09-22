@@ -43,6 +43,8 @@ class Server:
                             conn.sendall(pack_reply(0, self.engine.info()))
                         elif cmd.startswith('capture_'):
                             conn.sendall(pack_reply(0, self.engine.control(header)))
+                        elif cmd.startswith('video_'):
+                            conn.sendall(pack_reply(0, self.engine.video.control(header)))
                         else:
                             conn.sendall(pack_reply(0, {"state": "stopping"}))
                             self.stop.set()
@@ -82,7 +84,7 @@ class Server:
                 except socket.timeout:
                     with self.state_lock:
                         idle = (
-                            not self.active
+                            not self.active and not self.engine.video.running()
                             and time.monotonic() - self.last_activity > self.idle_timeout
                         )
                     if self.idle_timeout and idle:

@@ -41,12 +41,13 @@ OFX는 Nuke가 제공하는 픽셀로 Analyze하므로 분석용 Write·입력 �
 
 - **Target**: 찾을 대상을 텍스트로 입력합니다. 예: `ball`, `red car`.
 - **Confidence**: 검출을 채택하는 최소 점수입니다. 높이면 오검출이 줄지만 대상이 빠지는 프레임이 생길 수 있습니다.
-- **Object index**: 검출된 영역 중 사용할 대상을 선택합니다. 0은 가장 큰 영역입니다.
+- **Object index**: Reference frame에서 대상을 면적순으로 선택합니다. 0은 가장 큰 영역이며 이후에는 선택한 객체 ID를 따라갑니다.
 - **Frame range**: Analyze 구간입니다. Reset은 입력 범위를 읽고 Reference frame을 시작 프레임으로 맞춥니다.
-- **Analyze**: 마스크와 Solve용 흑백 영상을 RAM에 생성합니다. 입력과 검출 설정이 일치하는 엔진 캐시는 재사용할 수 있습니다.
+- **Analyze**: 입력 구간을 RAM으로 읽고 Reference frame에서 선택한 객체를 앞뒤로 영상 추적합니다. 마스크와 Solve용 흑백 영상을 RAM에 저장합니다.
 
 Analyze 전에는 Mask가 검은색입니다. 완료 후 프레임 이동·재생은 저장된 결과를 사용합니다.
-입력 영상이나 검출 설정을 바꾸면 Analyze로 갱신하세요. 원본 픽셀 변경을 매 프레임 자동 검사하지 않습니다.
+입력 영상·검출 설정·Reference frame을 바꾸면 Analyze로 갱신하세요. 원본 픽셀 변경을 매 프레임 자동 검사하지 않습니다.
+선택한 객체 ID가 없는 프레임은 빈 마스크로 남기며, 다른 대상으로 대체하지 않습니다.
 
 ## View
 
@@ -63,12 +64,12 @@ Mask overlay는 원본 alpha를 유지하며 alpha 없는 RGB 입력도 지원�
 
 ## Solve와 크롭
 
-Analyze 결과를 확인한 뒤 **Motion**과 **Reference frame**을 설정하고 **Solve**를 실행하세요.
+Analyze 결과를 확인한 뒤 **Motion**을 설정하고 **Solve**를 실행하세요.
 Solve는 저장된 마스크와 흑백 영상만 CPU로 처리하며 SAM3를 다시 호출하지 않습니다.
 
 - **BBox position + scale**: 마스크 경계로 이동과 균일 스케일을 계산합니다. 회전은 측정하지 않습니다.
 - **Features**: 마스크 내부 영상 특징으로 이동·스케일·회전을 계산합니다. 실패 시 BBox로 대체될 수 있습니다.
-- **Reference frame**: 움직임의 기준 프레임이며 대상 마스크가 있어야 합니다.
+- **Reference frame**: Analyze에서 추적 대상을 선택하고 Solve에서 움직임의 기준으로 사용하는 프레임입니다. 대상이 보이는 프레임을 Analyze 전에 지정하세요. 변경하면 Analyze부터 다시 실행합니다.
 - **Smoothing**: 양의 홀수 프레임 윈도 크기입니다. 1은 추가 평활화 없음입니다.
 - **Crop margin**: 마스크 경계에 대한 여유 배율이며 1 이상을 사용합니다.
 

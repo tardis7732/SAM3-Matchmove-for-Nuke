@@ -30,12 +30,15 @@ class Engine:
         self.cache = RamCache(cache_bytes)
         self.inferences = 0
         self.cache_hits = 0
+        from video_jobs import VideoJobs
+        self.video = VideoJobs(self)
 
     def info(self):
         return {'engine': 'SAM3 Mask', 'protocol': 1, 'pid': os.getpid(), 'state': self.state,
                 'requests': self.count, 'last_error': self.last_error,
                 'gpu_metrics': getattr(self.backend, 'metrics', {}), 'ram_analysis': True,
-                'ram_snapshot': True, 'inferences': self.inferences, 'cache_hits': self.cache_hits,
+                'ram_snapshot': True, 'video_tracking': 1, 'video_busy': self.video.running(),
+                'inferences': self.inferences, 'cache_hits': self.cache_hits,
                 'cache_frames': len(self.cache.entries), 'cache_bytes': self.cache.bytes,
                 'cache_limit_bytes': self.cache.max_bytes}
 
@@ -96,6 +99,11 @@ class Engine:
         key = (w, h, hashlib.sha256(data).digest(), prompt.strip(), float(threshold), index, encoding, revision)
         rgb = np.frombuffer(data, dtype='<f4').reshape(h, w, 3)
         rgb = prepare_rgb(rgb, encoding)
+        video_result = self.video.infer(header, rgb)
+        if video_result is not None:
+            return video_result
+        if header.get('capture_token') and header['capture_token'] not in self.cache.captures:
+            raise ValueError('RAM analysis session expired; Analyze again')
         with self.lock:
             started = time.monotonic()
             self.state = 'loading / inferring'
